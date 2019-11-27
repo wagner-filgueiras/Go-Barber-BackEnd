@@ -35,6 +35,11 @@ class User extends Model {
     // retorna o modulo que foi inicialiazado dentro desse hook
   }
 
+  static associate(models) {
+    this.belongsTo(models.File, { foreignKey: 'avatar_id', as: 'avatar' }); // Relaciona a tabela de Files com a tabela Users através do avatar_id
+    // Salva a referência de um id de arquivo dentro da tabela de usuários
+  }
+
   checkPassword(password) {
     return bcrypt.compare(password, this.password_hash);
   }
