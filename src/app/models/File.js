@@ -10,6 +10,12 @@ class File extends Model {
         // These fields dowm here doesn't have to be a mirror of the database fields (o usuário vai preenceher mas pode chegar o dado com nome de outro campo no banco de dados)
         name: Sequelize.STRING,
         path: Sequelize.STRING,
+        url: {
+          type: Sequelize.VIRTUAL,
+          get() {
+            return `http://localhost:3337/files/${this.path}`; // this se refere as variaveis de name e path
+          },
+        },
       },
       {
         sequelize, // this is the second parameter
