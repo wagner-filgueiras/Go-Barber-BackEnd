@@ -6,7 +6,8 @@ import Appointment from '../models/Appointment';
 import File from '../models/File';
 import Notification from '../schemas/Notification';
 
-import Mail from '../../lib/Mail';
+import CancellationMail from '../jobs/CancellationMail';
+import Queue from '../../lib/Queue';
 
 class AppointmentController {
   // Esse index é a listagem para o usuário comum e não para o provider
@@ -19,7 +20,7 @@ class AppointmentController {
         canceled_at: null, // Appointments not canceled
       },
       order: ['date'], // order by scheduled date
-      attributes: ['id', 'date'],
+      attributes: ['id', 'date', 'past', 'cancelable'],
       limit: 20, // List 20 appointments per page
       offset: (page - 1) * 20, // quantos registros vou pular para display na página
       include: [
@@ -94,7 +95,7 @@ class AppointmentController {
     const user = await User.findByPk(req.userId);
     const formattedDate = format(
       hourStart,
-      "'dia' dd 'de' MMMM', ás' H:mm'h'",
+      "'Dia' dd 'de' MMMM', ás' H:mm'h'",
       { locale: pt }
     );
 
@@ -114,6 +115,11 @@ class AppointmentController {
           model: User,
           as: 'provider',
           attributes: ['name', 'email'],
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: ['name'],
         },
       ],
     });
@@ -135,10 +141,8 @@ class AppointmentController {
 
     await appointment.save();
 
-    await Mail.sendMail({
-      to: `${appointment.provider.name} <${appointment.provider.email}>`,
-      subject: 'Agendamento Cancelado',
-      text: 'Você tem um novo cancelamento',
+    await Queue.add(CancellationMail.key, {
+      appointment,
     });
 
     return res.json(appointment);
